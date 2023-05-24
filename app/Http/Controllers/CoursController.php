@@ -38,7 +38,14 @@ class CoursController extends Controller
      */
     public function store(Request $request)
     {
-        return Cours::create($request->all());
+        $cours =  Cours::create($request->all());
+        if($request->idformation){
+            Cours_formations::where('cour_id',$cours->id)->delete();
+            foreach ($request->idformation as $key => $value) {
+                DB::insert("INSERT INTO `cours_formations`( `cour_id`, `formation_id`) VALUES (?,?)",[$cours->id,$value]);
+            }
+        }
+        return $cours;
     }
 
     /**
@@ -74,6 +81,12 @@ class CoursController extends Controller
     {
         $cours = Cours::findOrFail($id);
         $cours->update($request->all());
+        if($request->idformation){
+            Cours_formations::where('cour_id',$cours->id)->delete();
+            foreach ($request->idformation as $key => $value) {
+                DB::insert("INSERT INTO `cours_formations`( `cour_id`, `formation_id`) VALUES (?,?)",[$cours->id,$value]);
+            }
+        }
         return $cours;
     }
 
@@ -106,13 +119,13 @@ class CoursController extends Controller
     public function Search(Request $request)
     {
         $mesformations= DB::table('cours')
-        ->select('categories.*');
+        ->select('cours.*');
         $suite = '';
         if ($request->nom) {
-            $mesformations = $mesformations->where("nom",$request->nom);
+            $mesformations = $mesformations->where("nom","like",'%'.$request->nom.'%');
         }
-        if ($request->actif) {
-            $mesformations = $mesformations->where("actif",$request->actif);
+        if (strlen($request->statut) != 0) {
+            $mesformations = $mesformations->where("actif",'=',$request->statut);
         }
         if ($request->idutilisateur) {
             $mesformations = $mesformations->whereIn('id', function($query) use($request){
@@ -121,16 +134,23 @@ class CoursController extends Controller
                                 ->where('user_id', $request->idutilisateur);
                             });
         }
+        if ($request->idformation) {
+            $mesformations = $mesformations->whereIn('id', function($query) use($request){
+                                $query->select('cour_id')
+                                ->from(with(new Cours_formations)->getTable())
+                                ->where('formation_id', $request->idformation);
+                            });
+        }
         $mesformations = $mesformations->get();
         foreach ($mesformations as $value) {
             $value->inscrits = DB::table('users')
                                 ->join('inscriptions', 'users.id', '=', 'inscriptions.user_id')
                                 ->select('users.*', 'inscriptions.created_at as dateinscription')
-                                ->where('inscriptions.cour_id',$value->id)
+                                ->where('inscriptions.cours_id',$value->id)
                                 ->get();
             $value->formation = DB::table('formations')
-                            ->join('cours_formations', 'cours.id', '=', 'cours_formations.formation_id')
-                            ->select('formations.*')
+                            ->join('cours_formations', 'formations.id', '=', 'cours_formations.formation_id')
+                            ->select('formations.*','cours_formations.id as idcoursformation')
                             ->where('cours_formations.cour_id',$value->id)
                             ->get();
         }

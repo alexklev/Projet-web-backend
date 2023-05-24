@@ -37,6 +37,7 @@ class FormationController extends Controller
      */
     public function store(Request $request)
     {
+        // print_r($request->all());
         return Formation::create($request->all());
     }
 
@@ -105,15 +106,15 @@ class FormationController extends Controller
     public function Search(Request $request)
     {
         $mesformations= DB::table('formations')
-        ->select('categories.*');
+        ->select('formations.*');
         $suite = '';
         if ($request->nom) {
-            $mesformations = $mesformations->where("nom",$request->nom);
+            $mesformations = $mesformations->where("nom","like",'%'.$request->nom.'%');
         }
         if ($request->niveau) {
             $mesformations = $mesformations->where("niveau",$request->niveau);
         }
-        if ($request->statut) {
+        if (strlen($request->statut) != 0) {
             $mesformations = $mesformations->where("statut",$request->statut);
         }
         if ($request->idutilisateur) {
@@ -130,13 +131,14 @@ class FormationController extends Controller
         foreach ($mesformations as $value) {
             $value->inscrits = DB::table('users')
                                 ->join('inscriptions', 'users.id', '=', 'inscriptions.user_id')
-                                ->select('users.*', 'inscriptions.created_at as dateinscription')
+                                ->select('users.*', 'inscriptions.created_at as dateinscription','inscriptions.is_valider')
                                 ->where('inscriptions.formation_id',$value->id)
                                 ->get();
             $value->cours = DB::table('cours')
                             ->join('cours_formations', 'cours.id', '=', 'cours_formations.cour_id')
-                            ->select('cours.*')
+                            ->select('cours.*','cours_formations.id as idcoursformation')
                             ->where('cours_formations.formation_id',$value->id)
+                            ->where('cours.actif',1)
                             ->get();
         }
         return $mesformations;

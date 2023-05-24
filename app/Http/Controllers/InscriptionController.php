@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inscription;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InscriptionController extends Controller
 {
@@ -38,7 +39,7 @@ class InscriptionController extends Controller
         if (Inscription::where('user_id',$request->user_id)->where('formation_id',$request->formation_id)->count() != 0) {
             return response()->json(['error' => 'Une demande existe déjà pour cette formation pour cet utilisateur'], 403);
         }
-        elseif (Inscription::where('user_id',$request->user_id)->where('cour_id',$request->cour_id)->count() != 0) {
+        elseif (Inscription::where('user_id',$request->user_id)->where('cours_id',$request->cours_id)->count() != 0) {
             return response()->json(['error' => 'Une demande existe déjà pour ce cours pour cet utilisateur'], 403);
         }
         else{
@@ -94,5 +95,32 @@ class InscriptionController extends Controller
         $inscription->delete();
 
         return 204;
+    }
+    /**
+     * Searh  specific resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Cours  $cours
+     * @return \Illuminate\Http\Response
+     */
+    public function Search(Request $request)
+    {
+        $mesformations= DB::table('users')
+                                ->join('inscriptions','users.id','inscriptions.user_id')
+                                ->join('formations','formations.id','inscriptions.formation_id')
+                                ->select('users.*','users.id as idetudiant','formations.id as idformation',
+                                'formations.nom as titreformation','inscriptions.id as idinscription','inscriptions.is_valider');
+        $suite = '';
+        if ($request->nom) {
+            $mesformations = $mesformations->where("users.nom","like",'%'.$request->nom.'%');
+        }
+        if ($request->idformation) {
+            $mesformations = $mesformations->where("formations.id",$request->idformation);
+        }
+        if (strlen($request->statut) != 0) {
+            $mesformations = $mesformations->where("is_valider",'=',$request->statut);
+        }
+        $mesformations = $mesformations->get();
+        return $mesformations;
     }
 }

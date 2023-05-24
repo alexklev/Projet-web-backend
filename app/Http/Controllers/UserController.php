@@ -182,6 +182,37 @@ class UserController extends Controller
                 }
             }
         }
+    }
 
+    /**
+     * Searh  specific resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Formation  $formation
+     * @return \Illuminate\Http\Response
+     */
+    public function Search(Request $request)
+    {
+        $mesformations= DB::table('users')
+        ->select('users.*');
+        $suite = '';
+        if ($request->elt) {
+            $mesformations = $mesformations->where("nom","like",'%'.$request->elt.'%')
+                            ->orWhere("prenom","like",'%'.$request->elt.'%')
+                            ->orWhere("nationalite","like",'%'.$request->elt.'%')
+                            ->orWhere("email","like",'%'.$request->elt.'%')
+                            ->orWhere("telephone","like",'%'.$request->elt.'%')
+                            ->orWhere("identifiant","like",'%'.$request->elt.'%');
+        }
+        if ($request->role) {
+            $mesformations = $mesformations->where("role",$request->role);
+        }
+        $mesformations = $mesformations->get();
+        foreach ($mesformations as $value) {
+            $value->lastpassword = $value->password;
+            $value->password = hash('sha256', $value->password);
+            $value->lastconnexion = Connexion::where('user_id',$value->id)->orderBy('created_at', 'desc')->first();
+        }
+        return $mesformations;
     }
 }
