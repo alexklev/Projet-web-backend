@@ -72,7 +72,7 @@ class UserController extends Controller
                 $utilisateur->save();
             }
             $utilisateur->password = hash('sha256', $utilisateur->password);
-            return  response()->json(compact('utilisateur'));
+            return  $utilisateur;
         }
     }
 
@@ -85,6 +85,7 @@ class UserController extends Controller
     public function show($id)
     {
         $utilisateur = User::find($id);
+        $utilisateur->lastpassword = $utilisateur->password;
         $utilisateur->password = hash('sha256', $utilisateur->password);
         $utilisateur->lastconnexion = Connexion::where('user_id',$utilisateur->id)->orderBy('created_at', 'desc')->first();
         return $utilisateur;
@@ -111,7 +112,17 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $utilisateur = User::findOrFail($id);
-        $utilisateur->update($request->all());
+        // var_dump($request->nom);
+        $utilisateur->nom = $request->nom;
+        $utilisateur->prenom = $request->prenom;
+        $utilisateur->email = $request->email;
+        $utilisateur->identifiant = $request->identifiant;
+        $utilisateur->telephone = $request->telephone;
+        $utilisateur->nationalite = $request->nationalite;
+        $utilisateur->date_naissance = $request->date_naissance;
+        $utilisateur->password = $request->nationalite;
+        $utilisateur->role = $request->role;
+        $utilisateur->save();
         if ($image = $request->file('photo')) {
             $destinationPath = 'images/users';
             $image->move($destinationPath,$utilisateur->id.'_'. $image->getClientOriginalName());
@@ -125,6 +136,7 @@ class UserController extends Controller
                                 ->where('inscriptions.user_id',$utilisateur->id)
                                 ->where('inscriptions.is_valider',1)
                                 ->get();
+        $utilisateur->lastpassword = $utilisateur->password;
         $utilisateur->password = hash('sha256', $utilisateur->password);
         return $utilisateur;
     }
@@ -170,6 +182,12 @@ class UserController extends Controller
                     return response()->json(['error' => 'Vous n\'avez plus acces au site'], 401);
                 }
                 else{
+                    DB::table('connexions')->insert(
+                        array(
+                               'user_id' => $user->id,
+                               'date_connexion' => date('Y-m-d H:i:s')
+                        )
+                    );
                     $user->lastconnexion = Connexion::where('user_id',$user->id)->orderBy('created_at', 'desc')->first();
                     $user->password = hash('sha256', $user->password);
                     $user->formations = DB::table('formations')

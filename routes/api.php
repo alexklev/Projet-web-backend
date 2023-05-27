@@ -32,3 +32,4 @@ Route::post('/searchFormation', 'App\Http\Controllers\FormationController@Search
 Route::post('/searchCour', 'App\Http\Controllers\CoursController@Search'); // fonction search dans cours
 Route::post('/searchUsers', 'App\Http\Controllers\UserController@Search'); // fonction search dans users
 Route::post('/searchInscription', 'App\Http\Controllers\InscriptionController@Search'); // fonction search dans inscription
+Route::post('/searchInscriptionByFormation', 'App\Http\Controllers\InscriptionController@SearchFormation'); // fonction search dans inscription

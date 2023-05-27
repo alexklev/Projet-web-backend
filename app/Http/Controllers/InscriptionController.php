@@ -123,4 +123,29 @@ class InscriptionController extends Controller
         $mesformations = $mesformations->get();
         return $mesformations;
     }
+
+    public function SearchFormation(Request $request)
+    {
+        $mesformations= DB::table('formations')
+                                ->join('inscriptions','formations.id','inscriptions.formation_id')
+                                ->select('formations.*','inscriptions.id as idinscription','inscriptions.is_valider');
+        $suite = '';
+        if ($request->idutilisateur) {
+            $mesformations = $mesformations->where("inscriptions.user_id",$request->idutilisateur);
+        }
+        if ($request->nom) {
+            $mesformations = $mesformations->where("nom","like",'%'.$request->nom.'%');
+        }
+        if ($request->niveau) {
+            $mesformations = $mesformations->where("niveau",$request->niveau);
+        }
+        if ($request->date) {
+            $mesformations = $mesformations->where(DB::raw("(STR_TO_DATE(date_debut,'%M %d %Y'))"), ">=", $request->date)->where(DB::raw("(STR_TO_DATE(date_fin,'%M %d %Y'))"), "<=", $request->date);
+        }
+        if (strlen($request->statut) != 0) {
+            $mesformations = $mesformations->where("is_valider",'=',$request->statut);
+        }
+        $mesformations = $mesformations->get();
+        return $mesformations;
+    }
 }
